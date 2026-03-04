@@ -1,0 +1,70 @@
+slug: sci-atac-seq
+name: sci-ATAC-seq
+version: "v1"
+assay_family: scATAC-seq
+molecule_type: chromatin
+description: >-
+  Single-cell combinatorial indexing ATAC-seq. Uses combinatorial barcoding
+  to profile chromatin accessibility in thousands of single cells without
+  requiring physical cell isolation into individual compartments.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 50
+  read2_length: 50
+  index1_length: 8
+  index2_length: 8
+  segments:
+    - role: genomic_insert
+      read_number: 1
+      start_pos: 0
+      length: 50
+    - role: genomic_insert
+      read_number: 2
+      start_pos: 0
+      length: 50
+    - role: cell_barcode
+      read_number: 3
+      start_pos: 0
+      length: 8
+      description: Tn5 tagmentation index
+    - role: cell_barcode
+      read_number: 4
+      start_pos: 0
+      length: 8
+      description: PCR index
+
+barcodes:
+  - role: cell_barcode
+    length: 8
+    addition_method: tagmentation
+  - role: cell_barcode
+    length: 8
+    addition_method: PCR
+
+protocol_steps:
+  - Nuclei isolation
+  - Distribute nuclei across wells with indexed Tn5 (first barcode)
+  - Tagmentation of accessible chromatin
+  - Pool all nuclei
+  - Sort small numbers of nuclei into new wells
+  - PCR with indexed primers (second barcode)
+  - Pool, size select, and sequence
+
+caveats:
+  - Two-level combinatorial indexing (Tn5 + PCR)
+  - Requires FACS for second level of barcode assignment
+  - Sparse data per cell — typically 2000-10000 unique fragments
+
+citations:
+  - title: "Multiplex single-cell profiling of chromatin accessibility by combinatorial cellular indexing"
+    doi: "10.1126/science.aab1601"
+    authors: ["Cusanovich DA", "Daza R", "Adey A"]
+    year: 2015
+
+source_urls:
+  - https://www.science.org/doi/10.1126/science.aab1601
+
+confidence_score: 0.92

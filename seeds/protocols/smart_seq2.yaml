@@ -1,0 +1,62 @@
+slug: smart-seq2
+name: SMART-seq2
+version: "v2"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Plate-based full-length single-cell RNA-seq method. Captures full-length
+  transcripts without cell barcodes or UMIs. Each cell is sorted into an
+  individual well, providing high sensitivity and full transcript coverage
+  at the cost of lower throughput.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 50
+  read2_length: 50
+  segments:
+    - role: cdna
+      read_number: 1
+      start_pos: 0
+      length: 50
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 50
+
+barcodes: []
+
+protocol_steps:
+  - Sort single cells into 96/384-well plate with lysis buffer
+  - Reverse transcription with template switching
+  - PCR pre-amplification of full-length cDNA
+  - Tagmentation with Tn5 transposase (Nextera)
+  - Library construction and indexing PCR
+  - Sequencing
+
+qc_expectations:
+  - metric: genes_per_cell
+    typical_range_low: 2000
+    typical_range_high: 10000
+    notes: Higher sensitivity than droplet methods due to full-length coverage
+  - metric: reads_per_cell
+    typical_range_low: 500000
+    typical_range_high: 2000000
+    notes: Deeper sequencing per cell required
+
+caveats:
+  - No cell barcodes or UMIs — each well is one cell, one library
+  - Lower throughput (hundreds of cells) compared to droplet methods
+  - Higher cost per cell but better transcript coverage
+
+citations:
+  - title: "Full-length RNA-seq from single cells using Smart-seq2"
+    doi: "10.1038/nprot.2014.006"
+    authors: ["Picelli S", "Faridani OR", "Bjorklund AK"]
+    year: 2014
+
+source_urls:
+  - https://www.nature.com/articles/nprot.2014.006
+
+confidence_score: 0.95

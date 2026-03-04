@@ -1,0 +1,72 @@
+slug: 10x-chromium-multiome
+name: "10x Chromium Single Cell Multiome ATAC + Gene Expression"
+version: "v1"
+assay_family: multiome
+molecule_type: multi
+description: >-
+  Simultaneous profiling of gene expression and chromatin accessibility from
+  the same single cell using the 10x Genomics Chromium platform. Nuclei are
+  partitioned into GEMs where both ATAC and RNA libraries are generated.
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 50
+  read2_length: 50
+  index1_length: 8
+  index2_length: 16
+  segments:
+    - role: genomic_insert
+      read_number: 1
+      start_pos: 0
+      length: 50
+      description: ATAC or cDNA insert
+    - role: genomic_insert
+      read_number: 2
+      start_pos: 0
+      length: 50
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 8
+    - role: cell_barcode
+      read_number: 4
+      start_pos: 0
+      length: 16
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    whitelist_source: 737K-arc-v1.txt.gz
+    addition_method: ligation
+
+reagent_kits:
+  - name: Chromium Next GEM Single Cell Multiome ATAC + Gene Expression Kit
+    vendor: 10x Genomics
+    catalog_number: PN-1000283
+
+protocol_steps:
+  - Nuclei isolation
+  - Transposition of accessible chromatin
+  - GEM generation and barcoding
+  - Post GEM cleanup
+  - Pre-amplification
+  - ATAC library construction
+  - cDNA amplification and gene expression library construction
+  - Sequencing both libraries
+
+caveats:
+  - Uses nuclei, not whole cells — cytoplasmic RNA is lost
+  - ATAC and GEX libraries are sequenced separately with different read configurations
+  - GEX library uses Read 1 = 28bp (16bp barcode + 12bp UMI), Read 2 = 90bp (cDNA)
+
+citations:
+  - title: "Chromium Single Cell Multiome ATAC + Gene Expression"
+    url: https://www.10xgenomics.com/products/single-cell-multiome-atac-plus-gene-expression
+    authors: []
+
+source_urls:
+  - https://www.10xgenomics.com/support/single-cell-multiome-atac-plus-gene-expression
+
+confidence_score: 0.90

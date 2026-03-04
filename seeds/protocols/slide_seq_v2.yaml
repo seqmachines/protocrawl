@@ -1,0 +1,65 @@
+slug: slide-seq-v2
+name: Slide-seqV2
+version: "v2"
+assay_family: spatial-transcriptomics
+molecule_type: RNA
+description: >-
+  Spatial transcriptomics method using DNA-barcoded beads arranged on a
+  glass surface. Achieves near-single-cell resolution (10um bead diameter)
+  by transferring mRNA from tissue sections onto a spatially barcoded bead
+  array. V2 improves capture efficiency ~10-fold over the original method.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 42
+  read2_length: 42
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 14
+      description: Spatial bead barcode
+    - role: umi
+      read_number: 1
+      start_pos: 14
+      length: 9
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 42
+
+barcodes:
+  - role: cell_barcode
+    length: 14
+    addition_method: bead_synthesis
+  - role: umi
+    length: 9
+    addition_method: bead_synthesis
+
+protocol_steps:
+  - Prepare bead array on glass surface
+  - Sequence beads in situ to determine spatial barcodes (SOLiD or Illumina)
+  - Place fresh-frozen tissue section on bead array
+  - Tissue lysis and mRNA capture onto beads
+  - Reverse transcription
+  - Second strand synthesis
+  - Library amplification
+  - Sequencing
+
+caveats:
+  - Requires separate bead barcode sequencing step to create spatial map
+  - 10um bead size provides near-single-cell but not true single-cell resolution
+  - Fresh-frozen tissue only (no FFPE support)
+
+citations:
+  - title: "Highly sensitive spatial transcriptomics at near-cellular resolution with Slide-seqV2"
+    doi: "10.1038/s41587-020-0739-1"
+    authors: ["Stickels RR", "Murray E", "Kumar P"]
+    year: 2021
+
+source_urls:
+  - https://slideseq.broadinstitute.org/
+
+confidence_score: 0.90

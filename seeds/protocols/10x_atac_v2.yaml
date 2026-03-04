@@ -1,0 +1,80 @@
+slug: 10x-chromium-scatac-v2
+name: "10x Chromium Single Cell ATAC v2"
+version: "v2"
+assay_family: scATAC-seq
+molecule_type: chromatin
+description: >-
+  Droplet-based single-cell ATAC-seq using 10x Genomics Chromium platform.
+  Profiles open chromatin regions at single-cell resolution by transposing
+  sequencing adapters into accessible DNA within intact nuclei.
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 50
+  read2_length: 50
+  index1_length: 8
+  index2_length: 16
+  segments:
+    - role: genomic_insert
+      read_number: 1
+      start_pos: 0
+      length: 50
+    - role: genomic_insert
+      read_number: 2
+      start_pos: 0
+      length: 50
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 8
+    - role: cell_barcode
+      read_number: 4
+      start_pos: 0
+      length: 16
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    whitelist_source: 737K-cratac-v1.txt.gz
+    addition_method: ligation
+
+protocol_steps:
+  - Nuclei isolation and transposition
+  - GEM generation and barcoding
+  - Post GEM cleanup
+  - Library amplification and size selection
+  - Sequencing
+
+qc_expectations:
+  - metric: fragments_per_cell
+    typical_range_low: 5000
+    typical_range_high: 50000
+  - metric: tss_enrichment
+    typical_range_low: 5.0
+    typical_range_high: 20.0
+  - metric: fraction_in_peaks
+    typical_range_low: 0.3
+    typical_range_high: 0.7
+
+failure_modes:
+  - description: Low TSS enrichment
+    symptom: TSS enrichment score below 5
+    likely_cause: Over-transposition or nuclei damage
+    mitigation: Optimize transposition time and Tn5 concentration
+  - description: High nucleosome banding
+    symptom: Strong periodicity in fragment size distribution
+    likely_cause: Insufficient transposition
+    mitigation: Increase Tn5 concentration or incubation time
+
+citations:
+  - title: "Chromatin accessibility profiling by ATAC-seq"
+    doi: "10.1038/s41596-022-00692-9"
+    authors: ["Granja JM", "Corces MR", "Pierce SE"]
+    year: 2022
+
+source_urls:
+  - https://www.10xgenomics.com/support/single-cell-atac
+
+confidence_score: 0.93

@@ -1,0 +1,52 @@
+slug: 10x-xenium
+name: 10x Xenium In Situ
+version: "v1"
+assay_family: spatial-transcriptomics
+molecule_type: RNA
+description: >-
+  In situ spatial transcriptomics platform from 10x Genomics. Uses
+  padlock probe-based rolling circle amplification for highly sensitive
+  subcellular-resolution detection of RNA transcripts in intact tissue
+  sections. Supports FFPE and fresh-frozen tissues.
+vendor: 10x Genomics
+platform: Xenium Analyzer
+
+read_geometry:
+  read_type: single-end
+  read1_length: null
+  segments: []
+
+barcodes: []
+
+protocol_steps:
+  - Prepare tissue sections on Xenium slides
+  - Probe hybridization to target transcripts
+  - Ligation and rolling circle amplification
+  - Fluorescent labeling and imaging cycles
+  - Decode transcript identity from fluorescent barcodes
+  - Cell segmentation and analysis
+
+caveats:
+  - Requires Xenium Analyzer instrument
+  - Pre-designed gene panels (up to 5000 genes)
+  - Imaging-based, not sequencing-based
+  - Tissue quality significantly impacts results
+
+qc_expectations:
+  - metric: transcripts_per_cell
+    typical_range_low: 100
+    typical_range_high: 500
+  - metric: genes_per_cell
+    typical_range_low: 50
+    typical_range_high: 300
+
+citations:
+  - title: "Xenium In Situ technology for spatial transcriptomics"
+    authors: ["10x Genomics"]
+    year: 2023
+    url: https://www.10xgenomics.com/platforms/xenium
+
+source_urls:
+  - https://www.10xgenomics.com/platforms/xenium
+
+confidence_score: 0.90

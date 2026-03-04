@@ -1,0 +1,176 @@
+import asyncio
+from pathlib import Path
+
+import click
+import yaml
+
+from protoclaw.config import settings
+from protoclaw.models import Protocol
+
+
+@click.group()
+def cli() -> None:
+    """Protoclaw — sequencing protocol knowledge base."""
+
+
+@cli.command()
+@click.option(
+    "--seeds-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("seeds/protocols"),
+    help="Directory containing seed YAML files.",
+)
+def seed(seeds_dir: Path) -> None:
+    """Load seed protocol YAML files into the database."""
+    asyncio.run(_seed(seeds_dir))
+
+
+async def _seed(seeds_dir: Path) -> None:
+
+    from protoclaw.db.engine import async_session, engine
+    from protoclaw.db.repositories import create_protocol, get_protocol_by_slug
+    from protoclaw.db.tables import Base
+
+    # Create tables if they don't exist
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yaml_files = sorted(seeds_dir.glob("*.yaml"))
+    if not yaml_files:
+        click.echo(f"No YAML files found in {seeds_dir}")
+        return
+
+    click.echo(f"Found {len(yaml_files)} seed files in {seeds_dir}")
+
+    loaded = 0
+    skipped = 0
+    errors = 0
+
+    async with async_session() as session:
+        for f in yaml_files:
+            try:
+                data = yaml.safe_load(f.read_text())
+                protocol = Protocol(**data)
+
+                existing = await get_protocol_by_slug(session, protocol.slug)
+                if existing:
+                    click.echo(f"  SKIP: {protocol.slug} (already exists)")
+                    skipped += 1
+                    continue
+
+                await create_protocol(session, protocol)
+                click.echo(f"  OK: {protocol.slug} ({protocol.assay_family})")
+                loaded += 1
+            except Exception as e:
+                click.echo(f"  FAIL: {f.name}: {e}", err=True)
+                errors += 1
+
+        await session.commit()
+
+    click.echo(f"\nDone: {loaded} loaded, {skipped} skipped, {errors} errors")
+
+
+@cli.command()
+@click.option("--host", default=settings.api_host)
+@click.option("--port", default=settings.api_port, type=int)
+def serve(host: str, port: int) -> None:
+    """Run the FastAPI API server."""
+    import uvicorn
+
+    uvicorn.run("protoclaw.api.app:app", host=host, port=port, reload=True)
+
+
+@cli.command()
+@click.option(
+    "--sources",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("seeds/sources.yaml"),
+    help="YAML file with seed source URLs and keywords.",
+)
+@click.option("--dry-run", is_flag=True, help="Show what would run without executing.")
+def run(sources: Path, dry_run: bool) -> None:
+    """Run the full agent pipeline (Source Scout → Publisher)."""
+    asyncio.run(_run_pipeline(sources, dry_run))
+
+
+async def _run_pipeline(sources: Path, dry_run: bool) -> None:
+    from protoclaw.agents.source_scout.tools import load_seed_sources
+
+    seed_sources = load_seed_sources(str(sources))
+    click.echo(f"Pipeline sources: {len(seed_sources)} seed URLs from {sources}")
+
+    if dry_run:
+        for src in seed_sources:
+            click.echo(f"  - {src.get('url', 'N/A')}")
+        click.echo("\nDry run — no agents executed.")
+        return
+
+    try:
+        from protoclaw.agents.root_agent import pipeline_agent
+
+        click.echo("Starting pipeline...")
+        # ADK agent invocation — requires active Vertex AI credentials
+        from google.adk.runners import InMemoryRunner
+        from google.adk.sessions import InMemorySessionService
+
+        session_service = InMemorySessionService()
+        runner = InMemoryRunner(agent=pipeline_agent, session_service=session_service)
+        session = await session_service.create_session(app_name=pipeline_agent.name)
+
+        from google.genai.types import Content, Part
+
+        user_msg = Content(
+            role="user",
+            parts=[Part(text=f"Process these source documents: {sources}")],
+        )
+
+        async for event in runner.run_async(
+            session_id=session.id, user_id="cli", new_message=user_msg
+        ):
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if part.text:
+                        click.echo(f"[{event.author}] {part.text}")
+
+        click.echo("\nPipeline complete.")
+    except ImportError as e:
+        click.echo(f"Error: Missing dependency — {e}", err=True)
+        click.echo("Install google-adk and google-cloud-aiplatform.", err=True)
+        raise SystemExit(1)
+
+
+@cli.command(name="list")
+@click.option("--assay", default=None, help="Filter by assay family.")
+@click.option("--limit", default=50, type=int)
+def list_protocols(assay: str | None, limit: int) -> None:
+    """List protocols in the database."""
+    asyncio.run(_list_protocols(assay, limit))
+
+
+async def _list_protocols(assay: str | None, limit: int) -> None:
+    from protoclaw.db.engine import async_session, engine
+    from protoclaw.db.repositories import list_protocols as db_list
+    from protoclaw.db.tables import Base
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with async_session() as session:
+        rows = await db_list(session, assay_family=assay, limit=limit)
+
+    if not rows:
+        click.echo("No protocols found.")
+        return
+
+    click.echo(f"{'Slug':<35} {'Assay':<25} {'Score':<8} {'Status'}")
+    click.echo("─" * 80)
+    for r in rows:
+        click.echo(
+            f"{r.slug:<35} {r.assay_family:<25} {r.confidence_score:<8.2f} "
+            f"{r.review_status}"
+        )
+    click.echo(f"\n{len(rows)} protocol(s)")
+
+
+if __name__ == "__main__":
+    cli()

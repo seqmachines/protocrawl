@@ -1,0 +1,58 @@
+slug: cel-seq2
+name: CEL-Seq2
+version: "v2"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Improved version of CEL-Seq using linear amplification by in vitro
+  transcription (IVT). Cells are sorted into plates, lysed, and reverse
+  transcribed with barcoded poly-dT primers containing a UMI. Uses IVT
+  for linear amplification, reducing amplification bias.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 15
+  read2_length: 50
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 8
+    - role: umi
+      read_number: 1
+      start_pos: 8
+      length: 6
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 50
+
+barcodes:
+  - role: cell_barcode
+    length: 8
+    addition_method: primer
+  - role: umi
+    length: 6
+    addition_method: primer
+
+protocol_steps:
+  - Sort single cells into well plates
+  - Lyse cells and reverse transcribe with barcoded primers
+  - Pool all samples
+  - In vitro transcription (linear amplification)
+  - Fragment aRNA
+  - Second strand synthesis and library prep
+  - Sequencing
+
+citations:
+  - title: "CEL-Seq2: sensitive highly-multiplexed single-cell RNA-Seq"
+    doi: "10.1186/s13059-016-0938-8"
+    authors: ["Hashimshony T", "Senderovich N", "Avital G"]
+    year: 2016
+
+source_urls:
+  - https://github.com/yanailab/CEL-Seq-pipeline
+
+confidence_score: 0.93

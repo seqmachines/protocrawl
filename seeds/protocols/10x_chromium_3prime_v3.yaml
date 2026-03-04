@@ -1,0 +1,95 @@
+slug: 10x-chromium-3prime-v3
+name: "10x Chromium 3' Gene Expression v3"
+version: "v3"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Droplet-based single-cell RNA-seq using the 10x Genomics Chromium platform
+  with 3' gene expression v3 chemistry. Captures polyadenylated mRNA from
+  individual cells partitioned into gel beads in emulsion (GEMs).
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 28
+  read2_length: 91
+  index1_length: 8
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 16
+    - role: umi
+      read_number: 1
+      start_pos: 16
+      length: 12
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 91
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 8
+
+adapters:
+  - name: TruSeq Read 1
+    sequence: CTACACGACGCTCTTCCGATCT
+    position: "5prime"
+  - name: Partial P5
+    sequence: AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT
+    position: "5prime"
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    whitelist_source: 3M-february-2018.txt.gz
+    addition_method: ligation
+  - role: umi
+    length: 12
+    addition_method: ligation
+
+reagent_kits:
+  - name: Chromium Next GEM Single Cell 3' Kit v3.1
+    vendor: 10x Genomics
+    catalog_number: PN-1000269
+    version: "v3.1"
+
+protocol_steps:
+  - GEM generation and barcoding
+  - Post GEM-RT cleanup and cDNA amplification
+  - 3' gene expression library construction
+  - Sequencing on Illumina platform
+
+qc_expectations:
+  - metric: reads_per_cell
+    typical_range_low: 20000
+    typical_range_high: 50000
+  - metric: genes_per_cell
+    typical_range_low: 500
+    typical_range_high: 5000
+  - metric: valid_barcodes_fraction
+    typical_range_low: 0.95
+    typical_range_high: 0.99
+
+failure_modes:
+  - description: Low cell recovery
+    symptom: Fewer than expected barcodes in knee plot
+    likely_cause: Clogged microfluidic chip or incorrect cell concentration
+    mitigation: Ensure proper cell concentration (700-1200 cells/uL)
+  - description: High ambient RNA
+    symptom: Elevated background gene expression across all barcodes
+    likely_cause: Cell lysis before GEM generation
+    mitigation: Minimize time between cell preparation and loading
+
+citations:
+  - title: "Massively parallel digital transcriptional profiling of single cells"
+    doi: "10.1038/ncomms14049"
+    authors: ["Zheng GXY", "Terry JM", "Belgrader P"]
+    year: 2017
+
+source_urls:
+  - https://www.10xgenomics.com/support/single-cell-gene-expression
+
+confidence_score: 0.95

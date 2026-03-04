@@ -1,0 +1,74 @@
+slug: indrops-v3
+name: inDrops v3
+version: "v3"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Droplet-based single-cell RNA-seq using indexing droplets. Cells are
+  encapsulated with hydrogel beads carrying barcoded primers. V3 uses
+  a two-part cell barcode split across the bead oligo and a separate
+  index read.
+vendor: 1CellBio
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 61
+  read2_length: 14
+  index1_length: 8
+  segments:
+    - role: cdna
+      read_number: 1
+      start_pos: 0
+      length: 61
+    - role: cell_barcode
+      read_number: 2
+      start_pos: 0
+      length: 8
+      description: Barcode part 1
+    - role: cell_barcode
+      read_number: 2
+      start_pos: 8
+      length: 6
+      description: Barcode part 2
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 8
+
+barcodes:
+  - role: cell_barcode
+    length: 8
+    addition_method: bead_synthesis
+  - role: cell_barcode
+    length: 6
+    addition_method: bead_synthesis
+  - role: umi
+    length: 6
+    addition_method: bead_synthesis
+
+protocol_steps:
+  - Prepare hydrogel beads with barcoded primers
+  - Co-encapsulate cells and beads in droplets
+  - In-drop cell lysis and mRNA capture
+  - Reverse transcription in droplets
+  - Break emulsion
+  - Second strand synthesis and linear amplification (IVT)
+  - Library construction
+  - Sequencing
+
+caveats:
+  - Two-part cell barcode complicates demultiplexing
+  - Uses in-vitro transcription (IVT) amplification, not PCR
+  - Lower throughput than 10x Chromium
+
+citations:
+  - title: "Droplet barcoding for single-cell transcriptomics applied to embryonic stem cells"
+    doi: "10.1016/j.cell.2015.04.044"
+    authors: ["Klein AM", "Mazutis L", "Akartuna I"]
+    year: 2015
+
+source_urls:
+  - https://1cell-bio.com/
+
+confidence_score: 0.88

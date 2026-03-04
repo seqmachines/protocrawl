@@ -1,0 +1,50 @@
+slug: merfish
+name: MERFISH
+version: "v1"
+assay_family: spatial-transcriptomics
+molecule_type: RNA
+description: >-
+  Multiplexed Error-Robust Fluorescence In Situ Hybridization. An
+  imaging-based spatial transcriptomics method that uses combinatorial
+  labeling and sequential rounds of imaging to detect hundreds to
+  thousands of RNA species at subcellular resolution in intact tissue.
+vendor: Vizgen
+platform: MERSCOPE
+
+read_geometry:
+  read_type: single-end
+  read1_length: null
+  segments: []
+
+barcodes: []
+
+protocol_steps:
+  - Prepare tissue sections (fresh-frozen)
+  - Hybridize encoding probes (combinatorial FISH probes)
+  - Sequential rounds of readout hybridization and imaging
+  - Strip readout probes between rounds
+  - Decode RNA identity from binary barcode patterns
+  - Cell segmentation and transcript assignment
+
+caveats:
+  - Imaging-based method, not sequencing-based
+  - Requires specialized MERSCOPE instrument
+  - Gene panel must be pre-designed (up to ~1000 genes)
+  - Tissue preparation is critical for signal quality
+
+qc_expectations:
+  - metric: detection_efficiency
+    typical_range_low: 0.5
+    typical_range_high: 0.95
+    notes: Varies by tissue type and probe design
+
+citations:
+  - title: "Spatially resolved, highly multiplexed RNA profiling in single cells"
+    doi: "10.1126/science.aaa6090"
+    authors: ["Chen KH", "Boettiger AN", "Moffitt JR", "Wang S", "Zhuang X"]
+    year: 2015
+
+source_urls:
+  - https://vizgen.com/technology/
+
+confidence_score: 0.88

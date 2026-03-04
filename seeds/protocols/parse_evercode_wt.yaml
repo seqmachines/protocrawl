@@ -1,0 +1,101 @@
+slug: parse-evercode-wt
+name: "Parse Biosciences Evercode WT"
+version: "v2"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Combinatorial barcoding single-cell RNA-seq using fixation-based split-pool
+  approach. Cells are fixed, then subjected to multiple rounds of
+  combinatorial barcoding (RT, ligation, ligation, PCR) to uniquely identify
+  each cell without requiring specialized microfluidics hardware.
+vendor: Parse Biosciences
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 86
+  read2_length: 66
+  index1_length: 8
+  index2_length: 8
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 8
+      description: Round 1 barcode
+    - role: linker
+      read_number: 1
+      start_pos: 8
+      length: 18
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 26
+      length: 8
+      description: Round 2 barcode
+    - role: linker
+      read_number: 1
+      start_pos: 34
+      length: 18
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 52
+      length: 8
+      description: Round 3 barcode
+    - role: linker
+      read_number: 1
+      start_pos: 60
+      length: 14
+    - role: umi
+      read_number: 1
+      start_pos: 74
+      length: 12
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 66
+
+barcodes:
+  - role: cell_barcode
+    length: 8
+    addition_method: reverse_transcription
+  - role: cell_barcode
+    length: 8
+    addition_method: ligation
+  - role: cell_barcode
+    length: 8
+    addition_method: ligation
+  - role: umi
+    length: 12
+
+reagent_kits:
+  - name: Evercode WT v2
+    vendor: Parse Biosciences
+    catalog_number: ECW02110
+
+protocol_steps:
+  - Cell fixation and permeabilization
+  - Distribute into wells with RT barcoded primers
+  - In-cell reverse transcription (Round 1 barcode)
+  - Pool and redistribute
+  - Ligation of Round 2 barcode
+  - Pool and redistribute
+  - Ligation of Round 3 barcode
+  - Pool, lyse, and PCR with sample index
+  - Library construction and size selection
+  - Sequencing
+
+caveats:
+  - No microfluidics needed — uses standard lab equipment
+  - Three rounds of combinatorial barcoding
+  - Works with fixed cells, enabling batch processing
+
+citations:
+  - title: "Single-nucleus RNA-seq is not suitable for detection of microglial activation genes in humans"
+    doi: "10.1016/j.celrep.2022.110428"
+    authors: ["Thrupp N", "Sala Frigerio C", "Wolfs L"]
+    year: 2022
+
+source_urls:
+  - https://www.parsebiosciences.com/technology
+
+confidence_score: 0.88

@@ -1,0 +1,73 @@
+slug: bulk-rna-seq-truseq
+name: TruSeq Stranded mRNA
+version: "v2"
+assay_family: bulk-RNA-seq
+molecule_type: RNA
+description: >-
+  Standard bulk RNA-seq library preparation using poly-A selection.
+  The TruSeq Stranded mRNA protocol captures polyadenylated transcripts,
+  generates strand-specific libraries, and is widely used as a reference
+  standard for transcriptome profiling.
+vendor: Illumina
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 150
+  read2_length: 150
+  index1_length: 8
+  segments:
+    - role: cdna
+      read_number: 1
+      start_pos: 0
+      length: 150
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 150
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 8
+
+barcodes: []
+
+adapters:
+  - name: TruSeq Read 1
+    sequence: AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+    position: three_prime
+  - name: TruSeq Read 2
+    sequence: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+    position: three_prime
+
+protocol_steps:
+  - Poly-A selection with oligo-dT beads
+  - Fragment mRNA
+  - First strand synthesis (random priming)
+  - Second strand synthesis (dUTP for strand specificity)
+  - End repair and A-tailing
+  - Adapter ligation
+  - PCR enrichment
+  - Sequencing
+
+qc_expectations:
+  - metric: total_reads
+    typical_range_low: 20000000
+    typical_range_high: 50000000
+  - metric: mapping_rate
+    typical_range_low: 0.85
+    typical_range_high: 0.95
+  - metric: rrna_rate
+    typical_range_low: 0.0
+    typical_range_high: 0.05
+
+citations:
+  - title: "TruSeq Stranded mRNA Reference Guide"
+    authors: ["Illumina"]
+    year: 2017
+    url: https://support.illumina.com/sequencing/sequencing_kits/truseq-stranded-mrna.html
+
+source_urls:
+  - https://support.illumina.com/sequencing/sequencing_kits/truseq-stranded-mrna.html
+
+confidence_score: 0.97

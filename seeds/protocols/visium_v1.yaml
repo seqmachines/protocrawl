@@ -1,0 +1,91 @@
+slug: visium-v1
+name: "10x Visium Spatial Gene Expression"
+version: "v1"
+assay_family: spatial-transcriptomics
+molecule_type: RNA
+description: >-
+  Spatial transcriptomics method that captures mRNA from tissue sections using
+  barcoded oligonucleotides printed on glass slides. Each capture spot (55um
+  diameter) has a unique spatial barcode, enabling gene expression to be mapped
+  back to tissue coordinates.
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 28
+  read2_length: 91
+  index1_length: 10
+  index2_length: 10
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 16
+      description: Spatial barcode (identifies capture spot)
+    - role: umi
+      read_number: 1
+      start_pos: 16
+      length: 12
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 91
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 10
+    - role: sample_index
+      read_number: 4
+      start_pos: 0
+      length: 10
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    whitelist_source: visium-v1.txt
+    addition_method: printed_on_slide
+  - role: umi
+    length: 12
+
+reagent_kits:
+  - name: Visium Spatial Gene Expression Slide and Reagent Kit
+    vendor: 10x Genomics
+    catalog_number: PN-1000187
+
+protocol_steps:
+  - Tissue sectioning and placement on Visium slide
+  - Tissue fixation, staining, and imaging
+  - Tissue permeabilization
+  - mRNA capture by slide oligos and reverse transcription
+  - Second strand synthesis
+  - cDNA amplification
+  - Library construction
+  - Sequencing
+
+caveats:
+  - 55um spot size captures multiple cells (not single-cell resolution)
+  - Requires tissue optimization for permeabilization time
+  - Fresh-frozen and FFPE workflows differ significantly
+
+qc_expectations:
+  - metric: reads_per_spot
+    typical_range_low: 20000
+    typical_range_high: 100000
+  - metric: genes_per_spot
+    typical_range_low: 500
+    typical_range_high: 5000
+  - metric: fraction_under_tissue
+    typical_range_low: 0.5
+    typical_range_high: 0.9
+
+citations:
+  - title: "Visualization and analysis of gene expression in tissue sections by spatial transcriptomics"
+    doi: "10.1126/science.aaf2403"
+    authors: ["Stahl PL", "Salmen F", "Vickovic S"]
+    year: 2016
+
+source_urls:
+  - https://www.10xgenomics.com/support/spatial-gene-expression
+
+confidence_score: 0.93

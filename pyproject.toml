@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "protoclaw"
+version = "0.1.0"
+description = "Agent-native sequencing protocol knowledge base"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "google-adk>=1.0",
+    "google-cloud-aiplatform>=1.74",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "google-cloud-storage>=2.18",
+    "httpx>=0.28",
+    "arxiv>=2.1",
+    "jinja2>=3.1",
+    "click>=8.1",
+    "structlog>=24.0",
+    "tenacity>=9.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-httpx>=0.35",
+    "factory-boy>=3.3",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[project.scripts]
+protoclaw = "protoclaw.cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/protoclaw"]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

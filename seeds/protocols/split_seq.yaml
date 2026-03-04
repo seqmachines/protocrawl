@@ -1,0 +1,83 @@
+slug: split-seq
+name: SPLiT-seq
+version: "v1"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Split-Pool Ligation-based Transcriptome sequencing. A combinatorial
+  barcoding method that labels cells through successive rounds of
+  random split-pool barcoding, eliminating the need for physical
+  compartmentalization of individual cells.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 66
+  read2_length: 94
+  index1_length: 8
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 8
+      description: Round 1 barcode
+    - role: linker
+      read_number: 1
+      start_pos: 8
+      length: 30
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 38
+      length: 8
+      description: Round 2 barcode
+    - role: linker
+      read_number: 1
+      start_pos: 46
+      length: 14
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 60
+      length: 6
+      description: Round 3 barcode
+    - role: umi
+      read_number: 1
+      start_pos: 56
+      length: 10
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 94
+
+barcodes:
+  - role: cell_barcode
+    length: 24
+    addition_method: ligation
+  - role: umi
+    length: 10
+    addition_method: ligation
+
+protocol_steps:
+  - Fix and permeabilize cells
+  - In-cell reverse transcription
+  - "Round 1: split into wells, ligate barcode"
+  - "Round 2: pool, split, ligate barcode"
+  - "Round 3: pool, split, ligate barcode"
+  - Lyse cells and purify cDNA
+  - PCR amplification
+  - Library construction and sequencing
+
+caveats:
+  - Fixed cells may have lower RNA quality than fresh
+  - Combinatorial barcoding can have higher collision rates in dense samples
+
+citations:
+  - title: "Single-Cell Profiling of the Developing Mouse Brain and Spinal Cord with Split-Pool Barcoding"
+    doi: "10.1126/science.aam8999"
+    authors: ["Rosenberg AB", "Roco CM", "Muscat RA"]
+    year: 2018
+
+source_urls:
+  - https://splitbiosciences.com/
+
+confidence_score: 0.90

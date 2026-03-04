@@ -1,0 +1,48 @@
+slug: strt-seq
+name: STRT-seq
+version: "v1"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Single-cell Tagged Reverse Transcription sequencing. A plate-based
+  scRNA-seq method that captures the 5' end of transcripts using template
+  switching. Provides 5' enrichment allowing TSS mapping.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: single-end
+  read1_length: 50
+  segments:
+    - role: cdna
+      read_number: 1
+      start_pos: 0
+      length: 50
+
+barcodes:
+  - role: cell_barcode
+    length: 6
+    addition_method: primer
+  - role: umi
+    length: 5
+    addition_method: primer
+
+protocol_steps:
+  - Sort single cells into 48-well plates
+  - Lyse cells
+  - Reverse transcription with template switching
+  - Pool samples with barcoded adapters
+  - PCR amplification
+  - Library construction
+  - Sequencing
+
+citations:
+  - title: "Characterization of the single-cell transcriptional landscape by highly multiplex RNA-seq"
+    doi: "10.1101/gr.110882.110"
+    authors: ["Islam S", "Kjallquist U", "Moliner A"]
+    year: 2011
+
+source_urls:
+  - https://www.nature.com/articles/nmeth.2772
+
+confidence_score: 0.88

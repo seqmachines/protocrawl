@@ -1,0 +1,72 @@
+slug: drop-seq
+name: Drop-seq
+version: "v1"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Droplet-based single-cell RNA-seq method that encapsulates cells with
+  barcoded microparticles in nanoliter droplets. Uses a 12-bp cell barcode
+  and 8-bp UMI on the bead oligo with a poly-dT capture sequence.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 20
+  read2_length: 50
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 12
+    - role: umi
+      read_number: 1
+      start_pos: 12
+      length: 8
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 50
+
+barcodes:
+  - role: cell_barcode
+    length: 12
+    addition_method: bead_synthesis
+  - role: umi
+    length: 8
+    addition_method: bead_synthesis
+
+protocol_steps:
+  - Prepare single-cell suspension
+  - Co-encapsulate cells and barcoded beads in droplets
+  - Lyse cells, capture mRNA on bead poly-dT
+  - Break emulsion and reverse transcribe
+  - Exonuclease treatment
+  - PCR amplification
+  - Tagmentation and library construction
+  - Sequencing
+
+qc_expectations:
+  - metric: reads_per_cell
+    typical_range_low: 10000
+    typical_range_high: 50000
+  - metric: genes_per_cell
+    typical_range_low: 500
+    typical_range_high: 3000
+
+failure_modes:
+  - description: Bead doublets
+    symptom: Higher than expected number of transcripts per barcode
+    likely_cause: Multiple beads per droplet
+    mitigation: Optimize bead-to-cell ratio
+
+citations:
+  - title: "Highly Parallel Genome-wide Expression Profiling of Individual Cells Using Nanoliter Droplets"
+    doi: "10.1016/j.cell.2015.05.002"
+    authors: ["Macosko EZ", "Basu A", "Satija R"]
+    year: 2015
+
+source_urls:
+  - http://mccarrolllab.org/dropseq/
+
+confidence_score: 0.95

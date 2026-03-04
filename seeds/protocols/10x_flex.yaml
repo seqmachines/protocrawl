@@ -1,0 +1,65 @@
+slug: 10x-chromium-flex
+name: 10x Chromium Fixed RNA Profiling (Flex)
+version: "v1"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Probe-based single-cell gene expression profiling for fixed samples.
+  Uses a panel of probe pairs that hybridize to target transcripts in
+  fixed cells, enabling sample multiplexing and compatibility with
+  FFPE tissues. Supports up to 16-plex sample multiplexing.
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 28
+  read2_length: 90
+  index1_length: 10
+  index2_length: 10
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 16
+    - role: umi
+      read_number: 1
+      start_pos: 16
+      length: 12
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 90
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    addition_method: microfluidics
+    whitelist_source: 10x Genomics
+  - role: umi
+    length: 12
+
+protocol_steps:
+  - Fix cells (PFA or methanol)
+  - Hybridize probe pairs to target RNA
+  - Ligate probe pairs
+  - Load on Chromium controller
+  - GEM generation and barcode attachment
+  - Library construction
+  - Sequencing
+
+caveats:
+  - Requires pre-designed probe panel (human or mouse)
+  - Probe panel covers ~18,000 genes (not full transcriptome)
+  - FFPE samples may have variable RNA quality
+
+citations:
+  - title: "Scalable, flexible, and sensitive single-cell gene expression analysis of fixed cells"
+    doi: "10.1038/s41587-022-01588-5"
+    authors: ["10x Genomics"]
+    year: 2023
+
+source_urls:
+  - https://www.10xgenomics.com/products/single-cell-gene-expression-flex
+
+confidence_score: 0.93

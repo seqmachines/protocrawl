@@ -1,0 +1,89 @@
+slug: sci-rna-seq3
+name: sci-RNA-seq3
+version: "v3"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Single-cell combinatorial indexing RNA sequencing. Uses split-pool barcoding
+  across multiple rounds of combinatorial indexing to uniquely label single
+  cells without physical isolation. Enables profiling of millions of cells
+  in a single experiment.
+vendor: null
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 34
+  read2_length: 66
+  index1_length: 10
+  index2_length: 10
+  segments:
+    - role: umi
+      read_number: 1
+      start_pos: 0
+      length: 8
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 8
+      length: 10
+      description: Hairpin barcode (RT barcode)
+    - role: linker
+      read_number: 1
+      start_pos: 18
+      length: 6
+      sequence: CAGAGC
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 24
+      length: 10
+      description: Ligation barcode
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 66
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 10
+    - role: sample_index
+      read_number: 4
+      start_pos: 0
+      length: 10
+      description: PCR index (third level of indexing)
+
+barcodes:
+  - role: cell_barcode
+    length: 10
+    addition_method: ligation
+  - role: cell_barcode
+    length: 10
+    addition_method: reverse_transcription
+  - role: umi
+    length: 8
+
+protocol_steps:
+  - Nuclei isolation and fixation
+  - Distribute nuclei into wells with indexed RT primers
+  - Reverse transcription (first barcode)
+  - Pool and redistribute into new wells
+  - Ligation of second barcode
+  - Pool and redistribute
+  - PCR with indexed primers (third barcode)
+  - Library construction
+  - Sequencing
+
+caveats:
+  - Three-level combinatorial barcode scheme (RT + ligation + PCR)
+  - Lower sensitivity per cell compared to droplet methods
+  - Scales to millions of cells per experiment
+
+citations:
+  - title: "Single-cell profiling of the developing mouse brain and spinal cord with split-pool barcoding"
+    doi: "10.1126/science.aam8999"
+    authors: ["Rosenberg AB", "Roco CM", "Muscat RA"]
+    year: 2018
+
+source_urls:
+  - https://www.science.org/doi/10.1126/science.aam8999
+
+confidence_score: 0.88

@@ -1,0 +1,80 @@
+slug: 10x-chromium-5prime-v2
+name: "10x Chromium 5' Gene Expression v2"
+version: "v2"
+assay_family: scRNA-seq
+molecule_type: RNA
+description: >-
+  Droplet-based single-cell RNA-seq using 10x Genomics Chromium 5' chemistry.
+  Captures full-length cDNA from the 5' end of transcripts, enabling TCR/BCR
+  enrichment for immune profiling alongside gene expression.
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 26
+  read2_length: 91
+  index1_length: 10
+  index2_length: 10
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 16
+    - role: umi
+      read_number: 1
+      start_pos: 16
+      length: 10
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 91
+    - role: sample_index
+      read_number: 3
+      start_pos: 0
+      length: 10
+    - role: sample_index
+      read_number: 4
+      start_pos: 0
+      length: 10
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    whitelist_source: 737K-august-2016.txt
+    addition_method: ligation
+  - role: umi
+    length: 10
+    addition_method: ligation
+
+reagent_kits:
+  - name: Chromium Next GEM Single Cell 5' Kit v2
+    vendor: 10x Genomics
+    catalog_number: PN-1000263
+    version: "v2"
+
+protocol_steps:
+  - GEM generation and barcoding
+  - Post GEM-RT cleanup and cDNA amplification
+  - 5' gene expression library construction
+  - Optional V(D)J enrichment
+  - Sequencing on Illumina platform
+
+qc_expectations:
+  - metric: reads_per_cell
+    typical_range_low: 20000
+    typical_range_high: 50000
+  - metric: genes_per_cell
+    typical_range_low: 500
+    typical_range_high: 5000
+
+citations:
+  - title: "Massively parallel digital transcriptional profiling of single cells"
+    doi: "10.1038/ncomms14049"
+    authors: ["Zheng GXY", "Terry JM", "Belgrader P"]
+    year: 2017
+
+source_urls:
+  - https://www.10xgenomics.com/support/single-cell-immune-profiling
+
+confidence_score: 0.95

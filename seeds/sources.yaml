@@ -1,0 +1,78 @@
+# Curated seed sources for Source Scout
+# These are known, high-quality protocol documentation URLs
+
+sources:
+  # 10x Genomics
+  - url: https://teichlab.github.io/scg_lib_structs/
+    title: "scg_lib_structs — Single Cell Genomics Library Structures"
+    source_type: github
+
+  - url: https://www.10xgenomics.com/support/single-cell-gene-expression
+    title: "10x Genomics Single Cell Gene Expression Support"
+    source_type: vendor_docs
+
+  - url: https://www.10xgenomics.com/support/single-cell-atac
+    title: "10x Genomics Single Cell ATAC Support"
+    source_type: vendor_docs
+
+  - url: https://www.10xgenomics.com/support/single-cell-multiome-atac-plus-gene-expression
+    title: "10x Genomics Single Cell Multiome Support"
+    source_type: vendor_docs
+
+  - url: https://www.10xgenomics.com/support/spatial-gene-expression
+    title: "10x Genomics Visium Spatial Gene Expression Support"
+    source_type: vendor_docs
+
+  - url: https://www.10xgenomics.com/support/single-cell-immune-profiling
+    title: "10x Genomics Single Cell Immune Profiling (5') Support"
+    source_type: vendor_docs
+
+  # Drop-seq
+  - url: http://mccarrolllab.org/dropseq/
+    title: "Drop-seq — McCarroll Lab"
+    source_type: lab_page
+
+  # SMART-seq2
+  - url: https://www.nature.com/articles/nprot.2014.006
+    title: "Full-length RNA-seq from single cells using Smart-seq2"
+    source_type: paper
+
+  # sci-RNA-seq
+  - url: https://www.science.org/doi/10.1126/science.aam8999
+    title: "Single-cell profiling with split-pool barcoding"
+    source_type: paper
+
+  # Parse Biosciences
+  - url: https://www.parsebiosciences.com/technology
+    title: "Parse Biosciences Evercode Technology"
+    source_type: vendor_docs
+
+  # Slide-seq
+  - url: https://slideseq.broadinstitute.org/
+    title: "Slide-seq — Broad Institute"
+    source_type: lab_page
+
+  # CITE-seq
+  - url: https://cite-seq.com/
+    title: "CITE-seq"
+    source_type: lab_page
+
+  # sci-ATAC-seq
+  - url: https://www.science.org/doi/10.1126/science.aab1601
+    title: "Multiplex single-cell profiling of chromatin accessibility"
+    source_type: paper
+
+  # inDrops
+  - url: https://1cell-bio.com/
+    title: "1CellBio — inDrops"
+    source_type: vendor_docs
+
+# Search keywords for arXiv and GitHub discovery
+search_keywords:
+  - single-cell RNA-seq library preparation
+  - single-cell ATAC-seq protocol
+  - spatial transcriptomics library structure
+  - combinatorial indexing sequencing
+  - droplet-based single-cell sequencing
+  - sequencing library barcode design
+  - single-cell multiomics protocol

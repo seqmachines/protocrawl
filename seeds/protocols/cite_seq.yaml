@@ -1,0 +1,70 @@
+slug: cite-seq
+name: CITE-seq
+version: "v1"
+assay_family: CITE-seq
+molecule_type: multi
+description: >-
+  Cellular Indexing of Transcriptomes and Epitopes by Sequencing. Simultaneously
+  measures surface protein expression and transcriptome in single cells using
+  antibody-derived tags (ADTs). Compatible with 10x Chromium and other droplet
+  platforms.
+vendor: BioLegend
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 28
+  read2_length: 91
+  index1_length: 8
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 16
+      description: Shared cell barcode from 10x platform
+    - role: umi
+      read_number: 1
+      start_pos: 16
+      length: 12
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 91
+      description: ADT or mRNA insert depending on library
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    addition_method: ligation
+  - role: umi
+    length: 12
+    addition_method: ligation
+  - role: feature_barcode
+    length: 15
+    addition_method: antibody_conjugation
+
+protocol_steps:
+  - Stain cells with TotalSeq antibody-oligo conjugates
+  - Wash to remove unbound antibodies
+  - Load onto 10x Chromium (or other droplet platform)
+  - GEM generation and barcoding
+  - cDNA amplification (captures both mRNA and ADT)
+  - Size-select to separate ADT and mRNA fractions
+  - Construct separate GEX and ADT libraries
+  - Sequencing
+
+caveats:
+  - ADT and GEX libraries are sequenced separately or with different proportions
+  - Antibody panel design critically affects data quality
+  - TotalSeq-A, B, and C have different capture mechanisms for different platforms
+
+citations:
+  - title: "Simultaneous epitope and transcriptome measurement in single cells"
+    doi: "10.1038/nmeth.4380"
+    authors: ["Stoeckius M", "Hafemeister C", "Stephenson W"]
+    year: 2017
+
+source_urls:
+  - https://cite-seq.com/
+
+confidence_score: 0.92

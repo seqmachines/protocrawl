@@ -1,0 +1,67 @@
+slug: visium-hd
+name: Visium HD
+version: "v1"
+assay_family: spatial-transcriptomics
+molecule_type: RNA
+description: >-
+  High-definition spatial transcriptomics platform from 10x Genomics.
+  Provides continuous coverage at 2-micron resolution with no gaps between
+  capture spots. Enables single-cell scale spatial gene expression analysis
+  without the need for computational deconvolution.
+vendor: 10x Genomics
+platform: Illumina
+
+read_geometry:
+  read_type: paired-end
+  read1_length: 28
+  read2_length: 90
+  index1_length: 10
+  index2_length: 10
+  segments:
+    - role: cell_barcode
+      read_number: 1
+      start_pos: 0
+      length: 16
+      description: Spatial barcode
+    - role: umi
+      read_number: 1
+      start_pos: 16
+      length: 12
+    - role: cdna
+      read_number: 2
+      start_pos: 0
+      length: 90
+
+barcodes:
+  - role: cell_barcode
+    length: 16
+    addition_method: printed
+    whitelist_source: 10x Genomics
+  - role: umi
+    length: 12
+
+protocol_steps:
+  - Place tissue section on Visium HD slide
+  - Fix, stain, and image tissue
+  - Permeabilize tissue
+  - mRNA capture by spatial barcodes
+  - Reverse transcription
+  - Second strand synthesis
+  - Denaturation and transfer
+  - Library construction
+  - Sequencing
+
+caveats:
+  - Requires fresh-frozen tissue sections
+  - Higher sequencing depth needed vs standard Visium
+
+citations:
+  - title: "Visium HD enables single-cell resolution spatial transcriptomics"
+    doi: "10.1038/s41586-024-08412-7"
+    authors: ["10x Genomics"]
+    year: 2024
+
+source_urls:
+  - https://www.10xgenomics.com/products/visium-hd-spatial-gene-expression
+
+confidence_score: 0.92
