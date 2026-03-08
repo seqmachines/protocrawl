@@ -9,6 +9,7 @@ from protoclaw.models.enums import (
     ReadType,
     SegmentRole,
 )
+from protoclaw.models.seqspec import SeqSpec, SeqSpecRead, SeqSpecRegion
 
 # --- Response models for structured extraction ---
 
@@ -98,6 +99,10 @@ class ParsedProtocolDetails(BaseModel):
     caveats: list[str] = []
 
 
+class ParsedSeqSpec(SeqSpec):
+    """Structured seqspec-compatible document."""
+
+
 # --- Tool functions ---
 
 _EXTRACT_SYSTEM = (
@@ -109,7 +114,7 @@ _EXTRACT_SYSTEM = (
 
 async def extract_metadata(source_text: str) -> ParsedMetadata:
     """Extract protocol metadata (name, assay type, vendor, etc.) from source text."""
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=(
             "Extract the sequencing protocol metadata from this document:\n\n"
             f"{source_text}"
@@ -117,11 +122,12 @@ async def extract_metadata(source_text: str) -> ParsedMetadata:
         response_model=ParsedMetadata,
         system=_EXTRACT_SYSTEM,
     )
+    return result
 
 
 async def extract_read_structure(source_text: str) -> ParsedReadStructure:
     """Extract the complete read structure and segment layout from source text."""
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=(
             "Extract the sequencing read structure from this document. "
             "Include read type (paired-end or single-end), read lengths, "
@@ -134,11 +140,12 @@ async def extract_read_structure(source_text: str) -> ParsedReadStructure:
         response_model=ParsedReadStructure,
         system=_EXTRACT_SYSTEM,
     )
+    return result
 
 
 async def extract_barcodes(source_text: str) -> ParsedBarcodes:
     """Extract barcode and UMI specifications from source text."""
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=(
             "Extract all barcode and UMI specifications from this document. "
             "For each barcode, include: role (cell_barcode, umi, sample_index, "
@@ -151,11 +158,12 @@ async def extract_barcodes(source_text: str) -> ParsedBarcodes:
         response_model=ParsedBarcodes,
         system=_EXTRACT_SYSTEM,
     )
+    return result
 
 
 async def extract_adapters(source_text: str) -> ParsedAdapters:
     """Extract adapter sequences from source text."""
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=(
             "Extract all adapter and primer sequences from this document. "
             "For each adapter, include: name, nucleotide sequence, and "
@@ -165,11 +173,12 @@ async def extract_adapters(source_text: str) -> ParsedAdapters:
         response_model=ParsedAdapters,
         system=_EXTRACT_SYSTEM,
     )
+    return result
 
 
 async def extract_reagents(source_text: str) -> ParsedReagents:
     """Extract reagent kit information from source text."""
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=(
             "Extract all reagent kit information from this document. "
             "Include: kit name, vendor/manufacturer, catalog number if "
@@ -179,13 +188,14 @@ async def extract_reagents(source_text: str) -> ParsedReagents:
         response_model=ParsedReagents,
         system=_EXTRACT_SYSTEM,
     )
+    return result
 
 
 async def extract_protocol_details(
     source_text: str,
 ) -> ParsedProtocolDetails:
     """Extract protocol steps, QC expectations, failure modes, and caveats."""
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=(
             "Extract the following from this sequencing protocol document:\n"
             "1. High-level protocol/workflow steps (not detailed bench protocol)\n"
@@ -197,3 +207,41 @@ async def extract_protocol_details(
         response_model=ParsedProtocolDetails,
         system=_EXTRACT_SYSTEM,
     )
+    return result
+
+
+_SEQSPEC_SYSTEM = (
+    "You are an expert in sequencing assay specifications. "
+    "Extract a seqspec-compatible assay description from the source text. "
+    "Only include regions, reads, and metadata that are explicitly supported by the document. "
+    "The output must obey seqspec conventions: top-level assay metadata, "
+    "a nested 5prime-to-3prime library_spec, and sequence_spec reads keyed by primer_id "
+    "that reference region_ids present in library_spec."
+)
+
+
+async def extract_seqspec(
+    source_text: str,
+    source_urls: list[str] | None = None,
+) -> ParsedSeqSpec:
+    """Extract a strict seqspec-style assay specification from source text."""
+    prompt = (
+        "Extract a seqspec-compatible sequencing assay specification from this source text.\n\n"
+        "Requirements:\n"
+        "- Use top-level fields: assay_id, name, version, doi, date, description, "
+        "modalities, library_spec, sequence_spec, source_urls, extraction_notes.\n"
+        "- library_spec must be a nested list of contiguous regions ordered 5prime to 3prime.\n"
+        "- Each region must have a stable region_id and region_type.\n"
+        "- sequence_spec must define reads using primer_id values that exactly match region_ids "
+        "already present in library_spec.\n"
+        "- Avoid inventing unsupported detail. Leave optional fields null when unknown.\n\n"
+        f"Source text:\n{source_text}"
+    )
+    result = await glm5.extract_structured(
+        prompt=prompt,
+        response_model=ParsedSeqSpec,
+        system=_SEQSPEC_SYSTEM,
+    )
+    if source_urls:
+        result.source_urls = source_urls
+    return result

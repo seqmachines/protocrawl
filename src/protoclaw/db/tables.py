@@ -43,6 +43,8 @@ class ProtocolRow(Base):
     caveats: Mapped[list] = mapped_column(JSONB, default=list)
     source_urls: Mapped[list] = mapped_column(JSONB, default=list)
 
+    library_structure: Mapped[list | None] = mapped_column(JSONB, default=None, nullable=True)
+
     confidence_score: Mapped[float] = mapped_column(Float)
     review_status: Mapped[str] = mapped_column(String(50), default="pending")
     extraction_notes: Mapped[str | None] = mapped_column(Text)
@@ -216,6 +218,9 @@ class SourceDocumentRow(Base):
     metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict)
     discovered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     fetched_at: Mapped[datetime | None] = mapped_column(DateTime)
+    submissions: Mapped[list["ProtocolSubmissionRow"]] = relationship(
+        back_populates="source_document"
+    )
 
 
 class ReviewRequestRow(Base):
@@ -233,6 +238,9 @@ class ReviewRequestRow(Base):
 
     protocol: Mapped[ProtocolRow] = relationship(back_populates="review_requests")
     decisions: Mapped[list["ReviewDecisionRow"]] = relationship(
+        back_populates="review_request"
+    )
+    submissions: Mapped[list["ProtocolSubmissionRow"]] = relationship(
         back_populates="review_request"
     )
 
@@ -267,6 +275,73 @@ class ProtocolVersionRow(Base):
     created_by: Mapped[str] = mapped_column(String(255), default="system")
 
     protocol: Mapped[ProtocolRow] = relationship(back_populates="versions")
+
+
+class ProtocolSubmissionRow(Base):
+    __tablename__ = "protocol_submissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    source_url: Mapped[str] = mapped_column(String(2000))
+    notes: Mapped[str | None] = mapped_column(Text)
+    submitted_by: Mapped[str] = mapped_column(String(255), default="system")
+    status: Mapped[str] = mapped_column(String(50), default="queued")
+    source_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source_documents.id", ondelete="SET NULL")
+    )
+    protocol_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("protocols.id", ondelete="SET NULL")
+    )
+    review_request_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("review_requests.id", ondelete="SET NULL")
+    )
+    error_message: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    source_document: Mapped[SourceDocumentRow | None] = relationship(
+        back_populates="submissions"
+    )
+    protocol: Mapped[ProtocolRow | None] = relationship()
+    review_request: Mapped[ReviewRequestRow | None] = relationship(
+        back_populates="submissions"
+    )
+    runs: Mapped[list["IngestionRunRow"]] = relationship(
+        back_populates="submission", cascade="all, delete-orphan"
+    )
+
+
+class IngestionRunRow(Base):
+    __tablename__ = "ingestion_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    submission_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("protocol_submissions.id", ondelete="CASCADE")
+    )
+    status: Mapped[str] = mapped_column(String(50), default="queued")
+    stage: Mapped[str] = mapped_column(String(100), default="queued")
+    results: Mapped[dict] = mapped_column(JSONB, default=dict)
+    errors: Mapped[list] = mapped_column(JSONB, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    submission: Mapped[ProtocolSubmissionRow] = relationship(back_populates="runs")
+
+
+class ProtocolSeqSpecRow(Base):
+    __tablename__ = "protocol_seqspecs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    protocol_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("protocols.id", ondelete="CASCADE"), unique=True
+    )
+    submission_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("protocol_submissions.id", ondelete="SET NULL")
+    )
+    content_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    content_yaml: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PipelineRunRow(Base):

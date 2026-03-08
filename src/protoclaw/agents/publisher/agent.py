@@ -17,7 +17,7 @@ _INSTRUCTION = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else ""
 
 publisher_agent = LlmAgent(
     name="Publisher",
-    model=f"vertexai/{settings.vertex_model}",
+    model=settings.gemini_model,
     description=(
         "Writes validated protocol records to the database, "
         "uploads artifacts to GCS, and manages the human review "

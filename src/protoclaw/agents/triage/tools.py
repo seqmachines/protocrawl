@@ -50,7 +50,7 @@ async def classify_relevance(
         source_type: One of paper, github, vendor_docs, preprint, lab_page.
 
     Returns:
-        RelevanceResult with score, reason, and is_relevant flag.
+        Structured relevance result.
     """
     prompt = (
         f"Evaluate this {source_type} document for relevance to "
@@ -61,11 +61,12 @@ async def classify_relevance(
         f"(directly describes a protocol with technical details). "
         f"Set is_relevant=true if score >= 0.5."
     )
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=prompt,
         response_model=RelevanceResult,
         system=_TRIAGE_SYSTEM,
     )
+    return result
 
 
 async def assign_category(
@@ -79,7 +80,7 @@ async def assign_category(
         abstract_or_snippet: Abstract, summary, or first ~500 words.
 
     Returns:
-        CategoryResult with assay_family, confidence, and reasoning.
+        Structured category result.
     """
     families = ", ".join(f.value for f in AssayFamily)
     prompt = (
@@ -88,11 +89,12 @@ async def assign_category(
         f"Title: {title}\n\n"
         f"Content:\n{abstract_or_snippet}"
     )
-    return await glm5.extract_structured(
+    result = await glm5.extract_structured(
         prompt=prompt,
         response_model=CategoryResult,
         system=_TRIAGE_SYSTEM,
     )
+    return result
 
 
 async def triage_source(
@@ -108,16 +110,39 @@ async def triage_source(
         source_type: One of paper, github, vendor_docs, preprint, lab_page.
 
     Returns:
-        TriageResult with relevance, optional category, and should_parse flag.
+        Structured triage result.
     """
-    relevance = await classify_relevance(title, abstract_or_snippet, source_type)
+    relevance = await glm5.extract_structured(
+        prompt=(
+            f"Evaluate this {source_type} document for relevance to "
+            f"sequencing library preparation protocols.\n\n"
+            f"Title: {title}\n\n"
+            f"Content:\n{abstract_or_snippet}\n\n"
+            f"Score relevance from 0.0 (not relevant) to 1.0 "
+            f"(directly describes a protocol with technical details). "
+            f"Set is_relevant=true if score >= 0.5."
+        ),
+        response_model=RelevanceResult,
+        system=_TRIAGE_SYSTEM,
+    )
 
     category = None
     if relevance.is_relevant:
-        category = await assign_category(title, abstract_or_snippet)
+        families = ", ".join(f.value for f in AssayFamily)
+        category = await glm5.extract_structured(
+            prompt=(
+                f"Categorize this sequencing protocol into one of these "
+                f"assay families: {families}\n\n"
+                f"Title: {title}\n\n"
+                f"Content:\n{abstract_or_snippet}"
+            ),
+            response_model=CategoryResult,
+            system=_TRIAGE_SYSTEM,
+        )
 
-    return TriageResult(
+    result = TriageResult(
         relevance=relevance,
         category=category,
         should_parse=relevance.is_relevant,
     )
+    return result

@@ -67,6 +67,15 @@ class Citation(BaseModel):
     url: str | None = None
 
 
+class LibraryRegion(BaseModel):
+    """A single region in the final library structure visualization."""
+
+    type: str  # p5, p7, s5, s7, cbc, umi, me, cdna, index, tso, linker, etc.
+    top: str  # Top strand sequence text (5'->3')
+    bottom: str  # Bottom strand complement text (3'->5')
+    label: str | None = None  # Annotation label displayed below
+
+
 class QCExpectation(BaseModel):
     metric: str  # e.g., "reads_per_cell", "genes_per_cell"
     typical_range_low: float | None = None
@@ -110,6 +119,7 @@ class Protocol(BaseModel):
     qc_expectations: list[QCExpectation] = []
     failure_modes: list[FailureMode] = []
     caveats: list[str] = []
+    library_structure: list[LibraryRegion] | None = None
 
     citations: list[Citation] = []
     source_urls: list[str] = []

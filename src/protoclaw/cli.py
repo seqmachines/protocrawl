@@ -13,6 +13,14 @@ def cli() -> None:
     """Protoclaw — sequencing protocol knowledge base."""
 
 
+async def _ensure_schema() -> None:
+    from protoclaw.db.engine import engine
+    from protoclaw.db.tables import Base
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 @cli.command()
 @click.option(
     "--seeds-dir",
@@ -27,13 +35,10 @@ def seed(seeds_dir: Path) -> None:
 
 async def _seed(seeds_dir: Path) -> None:
 
-    from protoclaw.db.engine import async_session, engine
+    from protoclaw.db.engine import async_session
     from protoclaw.db.repositories import create_protocol, get_protocol_by_slug
-    from protoclaw.db.tables import Base
 
-    # Create tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await _ensure_schema()
 
     yaml_files = sorted(seeds_dir.glob("*.yaml"))
     if not yaml_files:
@@ -96,12 +101,12 @@ def run(sources: Path, dry_run: bool) -> None:
 async def _run_pipeline(sources: Path, dry_run: bool) -> None:
     from protoclaw.agents.source_scout.tools import load_seed_sources
 
-    seed_sources = load_seed_sources(str(sources))
+    seed_sources = await load_seed_sources(str(sources))
     click.echo(f"Pipeline sources: {len(seed_sources)} seed URLs from {sources}")
 
     if dry_run:
         for src in seed_sources:
-            click.echo(f"  - {src.get('url', 'N/A')}")
+            click.echo(f"  - {src.url}")
         click.echo("\nDry run — no agents executed.")
         return
 
@@ -109,13 +114,11 @@ async def _run_pipeline(sources: Path, dry_run: bool) -> None:
         from protoclaw.agents.root_agent import pipeline_agent
 
         click.echo("Starting pipeline...")
-        # ADK agent invocation — requires active Vertex AI credentials
+        # ADK agent invocation — requires an active Gemini API key
         from google.adk.runners import InMemoryRunner
-        from google.adk.sessions import InMemorySessionService
 
-        session_service = InMemorySessionService()
-        runner = InMemoryRunner(agent=pipeline_agent, session_service=session_service)
-        session = await session_service.create_session(app_name=pipeline_agent.name)
+        runner = InMemoryRunner(agent=pipeline_agent, app_name=pipeline_agent.name)
+        session = await runner.session_service.create_session(app_name=pipeline_agent.name, user_id="cli")
 
         from google.genai.types import Content, Part
 
@@ -135,7 +138,7 @@ async def _run_pipeline(sources: Path, dry_run: bool) -> None:
         click.echo("\nPipeline complete.")
     except ImportError as e:
         click.echo(f"Error: Missing dependency — {e}", err=True)
-        click.echo("Install google-adk and google-cloud-aiplatform.", err=True)
+        click.echo("Install google-adk and google-genai.", err=True)
         raise SystemExit(1)
 
 
@@ -148,12 +151,10 @@ def list_protocols(assay: str | None, limit: int) -> None:
 
 
 async def _list_protocols(assay: str | None, limit: int) -> None:
-    from protoclaw.db.engine import async_session, engine
+    from protoclaw.db.engine import async_session
     from protoclaw.db.repositories import list_protocols as db_list
-    from protoclaw.db.tables import Base
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await _ensure_schema()
 
     async with async_session() as session:
         rows = await db_list(session, assay_family=assay, limit=limit)
@@ -170,6 +171,77 @@ async def _list_protocols(assay: str | None, limit: int) -> None:
             f"{r.review_status}"
         )
     click.echo(f"\n{len(rows)} protocol(s)")
+
+
+@cli.command()
+@click.option("--url", "source_url", default=None, help="Protocol source URL.")
+@click.option(
+    "--file",
+    "source_file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Local protocol file path, including PDF.",
+)
+@click.option("--notes", default=None, help="Optional submission notes.")
+@click.option("--submitted-by", default="cli", help="Submitter identity.")
+def submit(
+    source_url: str | None,
+    source_file: Path | None,
+    notes: str | None,
+    submitted_by: str,
+) -> None:
+    """Submit a source URL or local file and run ingestion immediately."""
+    asyncio.run(_submit(source_url, source_file, notes, submitted_by))
+
+
+async def _submit(
+    source_url: str | None,
+    source_file: Path | None,
+    notes: str | None,
+    submitted_by: str,
+) -> None:
+    from protoclaw.services.ingestion import create_submission_and_ingest
+
+    if bool(source_url) == bool(source_file):
+        raise click.UsageError("Provide exactly one of --url or --file.")
+
+    source_ref = source_url or source_file.resolve().as_uri()
+    await _ensure_schema()
+    result = await create_submission_and_ingest(
+        source_ref,
+        notes=notes,
+        submitted_by=submitted_by,
+    )
+    click.echo(yaml.safe_dump(result, sort_keys=False))
+
+
+@cli.command(name="submissions")
+@click.option("--limit", default=20, type=int)
+def list_submissions(limit: int) -> None:
+    """List recent protocol submissions."""
+    asyncio.run(_list_submissions(limit))
+
+
+async def _list_submissions(limit: int) -> None:
+    from protoclaw.db.engine import async_session
+    from protoclaw.db.repositories import list_submissions as db_list_submissions
+    from protoclaw.services.ingestion import serialize_submission
+
+    await _ensure_schema()
+
+    async with async_session() as session:
+        rows = await db_list_submissions(session, limit=limit)
+
+    if not rows:
+        click.echo("No submissions found.")
+        return
+
+    for row in rows:
+        submission = serialize_submission(row)
+        click.echo(
+            f"{submission['id']} {submission['status']:<10} "
+            f"{submission['source_url']}"
+        )
 
 
 if __name__ == "__main__":

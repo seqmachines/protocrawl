@@ -19,6 +19,7 @@ from protoclaw.models.enums import (
     ReadType,
     SegmentRole,
 )
+from protoclaw.models.seqspec import SeqSpec, SeqSpecRegion
 
 
 def _slugify(name: str, version: str | None = None) -> str:
@@ -203,6 +204,9 @@ def normalize_to_schema(
 
     Takes the raw outputs from each parser tool and combines them
     into a validated Protocol instance.
+
+    Returns:
+        Dict representation of the canonical Protocol.
     """
     meta = metadata or {}
     name = meta.get("name", "Unknown Protocol")
@@ -306,7 +310,7 @@ def normalize_to_schema(
         protocol_details=protocol_details,
     )
 
-    return Protocol(
+    protocol = Protocol(
         slug=_slugify(name, version),
         name=name,
         version=version or "v1",
@@ -327,4 +331,182 @@ def normalize_to_schema(
         source_urls=source_urls or [],
         confidence_score=confidence["score"],
         extraction_notes=confidence["notes"],
+    )
+    return protocol
+
+
+def _seqspec_region_length(region: SeqSpecRegion) -> int | None:
+    if region.max_len is not None:
+        return region.max_len
+    if region.min_len is not None and region.max_len is None:
+        return region.min_len
+    if region.sequence:
+        return len(region.sequence)
+    return None
+
+
+def _seqspec_paths(regions: list[SeqSpecRegion]) -> list[list[SeqSpecRegion]]:
+    paths: list[list[SeqSpecRegion]] = []
+    for region in regions:
+        child_paths = _seqspec_paths(region.regions)
+        if not child_paths:
+            paths.append([region])
+            continue
+        for path in child_paths:
+            paths.append([region, *path])
+    return paths
+
+
+def _segment_role_from_region_type(region_type: str) -> SegmentRole:
+    normalized = region_type.lower()
+    mapping = {
+        "barcode": SegmentRole.CELL_BARCODE,
+        "umi": SegmentRole.UMI,
+        "cdna": SegmentRole.CDNA,
+        "gdna": SegmentRole.GENOMIC_INSERT,
+        "index": SegmentRole.SAMPLE_INDEX,
+        "adapter": SegmentRole.ADAPTER,
+        "primer": SegmentRole.PRIMER,
+        "linker": SegmentRole.LINKER,
+        "spacer": SegmentRole.SPACER,
+        "feature_barcode": SegmentRole.FEATURE_BARCODE,
+    }
+    return mapping.get(normalized, SegmentRole.OTHER)
+
+
+def _assay_family_from_seqspec(seqspec: SeqSpec) -> AssayFamily:
+    haystack = " ".join([seqspec.name, seqspec.description, *seqspec.modalities]).lower()
+    if "atac" in haystack:
+        return AssayFamily.SCATAC_SEQ
+    if "spatial" in haystack or "visium" in haystack or "xenium" in haystack:
+        return AssayFamily.SPATIAL_TRANSCRIPTOMICS
+    if "multiome" in haystack:
+        return AssayFamily.MULTIOME
+    if "cite" in haystack or "protein" in haystack:
+        return AssayFamily.CITE_SEQ
+    if "bulk" in haystack:
+        return AssayFamily.BULK_RNA_SEQ
+    return AssayFamily.SCRNA_SEQ
+
+
+def _molecule_type_from_seqspec(seqspec: SeqSpec) -> MoleculeType:
+    haystack = " ".join(seqspec.modalities).lower()
+    if "chromatin" in haystack or "atac" in haystack or "dna" in haystack:
+        return MoleculeType.CHROMATIN
+    if "protein" in haystack:
+        return MoleculeType.PROTEIN
+    return MoleculeType.RNA
+
+
+def seqspec_confidence(seqspec: SeqSpec) -> dict:
+    score = 0.0
+    issues: list[str] = []
+
+    if seqspec.name and seqspec.assay_id:
+        score += 0.25
+    else:
+        issues.append("Missing assay_id or name")
+
+    if seqspec.library_spec:
+        score += 0.35
+    else:
+        issues.append("Missing library_spec")
+
+    if seqspec.sequence_spec:
+        score += 0.30
+    else:
+        issues.append("Missing sequence_spec")
+
+    if seqspec.modalities:
+        score += 0.10
+    else:
+        issues.append("Missing modalities")
+
+    return {
+        "score": round(min(score, 1.0), 2),
+        "notes": f"{len(issues)} seqspec issue(s) found" if issues else "Clean seqspec extraction",
+        "issues": issues,
+    }
+
+
+def seqspec_to_protocol(seqspec: SeqSpec) -> Protocol:
+    paths = _seqspec_paths(seqspec.library_spec)
+    read_segments: list[ReadSegment] = []
+    read_lengths: dict[int, int | None] = {}
+
+    for index, read in enumerate(seqspec.sequence_spec, start=1):
+        path = next((path for path in paths if any(region.region_id == read.primer_id for region in path)), [])
+        if path:
+            primer_index = next(
+                i for i, region in enumerate(path) if region.region_id == read.primer_id
+            )
+            relevant_regions = path[primer_index:]
+        else:
+            relevant_regions = []
+
+        cursor = 0
+        for region in relevant_regions:
+            length = _seqspec_region_length(region)
+            read_segments.append(
+                ReadSegment(
+                    role=_segment_role_from_region_type(region.region_type),
+                    read_number=index,
+                    start_pos=cursor,
+                    length=length,
+                    sequence=region.sequence,
+                    description=region.name or region.region_id,
+                )
+            )
+            if length is not None:
+                cursor += length
+        read_lengths[index] = read.max_len or (cursor if cursor > 0 else None)
+
+    flattened_regions = [region for path in paths for region in path]
+    barcodes = [
+        BarcodeSpec(
+            role=_segment_role_from_region_type(region.region_type),
+            length=_seqspec_region_length(region) or 0,
+            whitelist_source=region.onlist,
+        )
+        for region in flattened_regions
+        if region.region_type.lower() in {"barcode", "umi", "index", "feature_barcode"}
+        and (_seqspec_region_length(region) or 0) > 0
+    ]
+
+    adapters = [
+        Adapter(
+            name=region.name or region.region_id,
+            sequence=region.sequence or "",
+            position="internal",
+        )
+        for region in flattened_regions
+        if region.region_type.lower() == "adapter" and region.sequence
+    ]
+
+    confidence = seqspec_confidence(seqspec)
+    read_type = ReadType.PAIRED_END if len(seqspec.sequence_spec) > 1 else ReadType.SINGLE_END
+
+    return Protocol(
+        slug=_slugify(seqspec.assay_id, seqspec.version),
+        name=seqspec.name,
+        version=seqspec.version or "v1",
+        assay_family=_assay_family_from_seqspec(seqspec),
+        molecule_type=_molecule_type_from_seqspec(seqspec),
+        description=seqspec.description,
+        read_geometry=ReadGeometry(
+            read_type=read_type,
+            read1_length=read_lengths.get(1),
+            read2_length=read_lengths.get(2),
+            index1_length=read_lengths.get(3),
+            index2_length=read_lengths.get(4),
+            segments=read_segments,
+        ),
+        adapters=adapters,
+        barcodes=barcodes,
+        reagent_kits=[],
+        protocol_steps=[],
+        citations=[],
+        source_urls=seqspec.source_urls,
+        confidence_score=confidence["score"],
+        extraction_notes=seqspec.extraction_notes or confidence["notes"],
     )

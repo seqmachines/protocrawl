@@ -2,20 +2,25 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    model_config = {"env_prefix": "PROTOCLAW_"}
+    model_config = {
+        "env_prefix": "PROTOCLAW_",
+        "env_file": ".env",
+        "extra": "ignore",
+    }
 
     # Database
     database_url: str = (
         "postgresql+asyncpg://protoclaw:protoclaw@localhost:5432/protoclaw"
     )
 
-    # Google Cloud
+    # Google Cloud (optional for GCS/deployment)
     gcp_project: str = ""
     gcp_location: str = "us-central1"
     gcs_bucket: str = "protoclaw-artifacts"
 
-    # LLM — GLM-5 via Vertex AI Model Garden
-    vertex_model: str = "zai-org/glm-5"
+    # Gemini API
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.1-pro-preview"
 
     # Confidence thresholds
     auto_publish_threshold: float = 0.85
@@ -24,6 +29,13 @@ class Settings(BaseSettings):
     # API
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    cors_allow_origins: str = "*"
+
+    # Slack
+    slack_bot_token: str = ""
+    slack_signing_secret: str = ""
+    slack_app_token: str = ""
+    slack_review_channel: str = ""
 
 
 settings = Settings()

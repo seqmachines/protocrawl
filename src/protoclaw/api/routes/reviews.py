@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from protoclaw.agents.formatter.tools import render_read_diagram
 from protoclaw.api.dependencies import get_db
-from protoclaw.api.routes.protocols import _row_to_protocol
 from protoclaw.db import repositories as repo
+from protoclaw.services.protocols import row_to_protocol
 
 router = APIRouter()
 
@@ -47,7 +47,7 @@ async def review_detail(
     if not protocol_row:
         return HTMLResponse("Protocol not found", status_code=404)
 
-    protocol = _row_to_protocol(protocol_row)
+    protocol = row_to_protocol(protocol_row)
     diagram = render_read_diagram(protocol)
 
     return templates.TemplateResponse(

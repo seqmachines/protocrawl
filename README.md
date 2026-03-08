@@ -19,7 +19,7 @@ Source Scout → Triage → Parser → Normalizer → Formatter → Publisher
 
 Built with:
 - **Google ADK** — `SequentialAgent` + `LlmAgent` orchestration
-- **GLM-5** via Vertex AI Model Garden (OpenAI-compatible endpoint with ADC auth)
+- **Gemini API** — default model `gemini-3.1-pro-preview`
 - **FastAPI** — REST API + Jinja2 review UI
 - **PostgreSQL** — async via SQLAlchemy 2.0 + asyncpg
 - **Pydantic v2** — canonical protocol schema with 20+ fields
@@ -40,7 +40,7 @@ Each protocol captures:
 
 - Python 3.11+
 - PostgreSQL 16+
-- Google Cloud credentials (for LLM access)
+- Gemini API key
 
 ### Setup
 
@@ -51,7 +51,7 @@ pip install -e ".[dev]"
 
 # Copy environment config
 cp .env.example .env
-# Edit .env with your GCP project and database URL
+# Edit .env with your Gemini API key and database URL
 
 # Start PostgreSQL
 docker compose up -d
@@ -73,6 +73,15 @@ protoclaw seed --seeds-dir seeds/protocols
 protoclaw list
 protoclaw list --assay scRNA-seq
 
+# Submit a new protocol source URL and ingest it immediately
+protoclaw submit --url https://example.com/protocol-page --notes "vendor doc"
+
+# Submit a local PDF or text file directly
+protoclaw submit --file /path/to/protocol.pdf --notes "local pdf"
+
+# List recent submissions
+protoclaw submissions
+
 # Run the full agent pipeline
 protoclaw run --dry-run          # Preview sources
 protoclaw run                    # Execute pipeline
@@ -88,11 +97,59 @@ GET  /health                          Health check
 GET  /protocols                       List protocols (filter: ?assay_family=)
 GET  /protocols/{slug}                Protocol detail
 GET  /protocols/{slug}/read-geometry  Read geometry detail
+GET  /protocols/{slug}/seqspec        Seqspec artifact (json or ?format=yaml)
 GET  /protocols/{slug}/versions       Version history
 GET  /reviews                         Pending review requests
 GET  /reviews/{id}                    Review detail with read diagram
 POST /reviews/{id}/decide             Approve or reject a protocol
+POST /submissions                     Submit a source URL and ingest it
+POST /submissions/upload              Upload a local file and ingest it
+GET  /submissions                     List ingestion submissions
+GET  /submissions/{id}                Submission detail
+POST /submissions/{id}/run            Re-run a submission
+POST /pipeline/run                    Ingest seed source URLs
+POST /slack/commands                  Slack slash-command endpoint
 ```
+
+## Slack Usage
+
+Set these env vars in `.env`:
+
+```bash
+PROTOCLAW_SLACK_SIGNING_SECRET=...
+PROTOCLAW_SLACK_BOT_TOKEN=...
+PROTOCLAW_SLACK_APP_TOKEN=...
+```
+
+Run the API:
+
+```bash
+protoclaw serve
+```
+
+Expose it to Slack locally, for example with ngrok:
+
+```bash
+ngrok http 8000
+```
+
+Create a Slack slash command such as `/protoclaw` and point it to:
+
+```text
+https://<your-public-host>/slack/commands
+```
+
+Then use these command forms in Slack:
+
+```text
+/protoclaw protocol smart-seq2
+/protoclaw read smart-seq2
+/protoclaw reviews
+/protoclaw review <review-uuid> approve
+/protoclaw review <review-uuid> reject
+```
+
+The Slack endpoint currently supports slash-command style interactions. Querying a protocol returns its summary, `read` returns the read diagram, `reviews` lists pending reviews, and `review ... approve|reject` updates review status in the same database used by the API and CLI.
 
 ## Seed Protocols
 
@@ -149,10 +206,10 @@ src/protoclaw/
     root_agent.py     # SequentialAgent pipeline wiring
   api/                # FastAPI app, routes, templates
   db/                 # SQLAlchemy tables, repositories, migrations
-  llm/                # Vertex AI MaaS client (GLM-5)
+  llm/                # Gemini API client helpers
   models/             # Pydantic models (protocol, review, source, enums)
   config.py           # Pydantic Settings
-  cli.py              # Click CLI (seed, serve, run, list)
+  cli.py              # Click CLI (seed, serve, run, list, submit, submissions)
 seeds/
   protocols/          # 21 YAML seed files
   sources.yaml        # Curated source URLs and search keywords

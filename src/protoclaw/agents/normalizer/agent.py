@@ -17,7 +17,7 @@ _INSTRUCTION = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else ""
 
 normalizer_agent = LlmAgent(
     name="Normalizer",
-    model=f"vertexai/{settings.vertex_model}",
+    model=settings.gemini_model,
     description=(
         "Validates and normalizes raw parsed protocol data into the "
         "canonical Protoclaw schema, computing confidence scores."

@@ -13,10 +13,10 @@ from protoclaw.models.review import ReviewRequest
 
 
 class PublishResult(BaseModel):
-    """Result of a publish operation for a single protocol."""
+    """Serializable result of a publish operation for a single protocol."""
 
     slug: str
-    action: str  # "published", "review_requested"
+    action: str
     confidence_level: str
     confidence_score: float
     review_request_id: str | None = None
@@ -24,19 +24,21 @@ class PublishResult(BaseModel):
 
 
 async def publish_protocol(
-    protocol: Protocol,
-) -> PublishResult:
+    protocol_json: str,
+) -> dict:
     """Publish or queue a protocol based on its confidence score.
 
     HIGH confidence: writes directly to DB with approved status.
     MEDIUM/LOW: creates a review request instead.
 
     Args:
-        protocol: A normalized, formatted Protocol instance.
+        protocol_json: JSON string of a normalized Protocol.
 
     Returns:
-        PublishResult describing what action was taken.
+        Dict describing what action was taken.
     """
+    protocol = Protocol.model_validate_json(protocol_json)
+
     from protoclaw.db.engine import async_session
     from protoclaw.db.repositories import (
         create_protocol,
@@ -50,13 +52,13 @@ async def publish_protocol(
         # Check if protocol already exists
         existing = await get_protocol_by_slug(session, protocol.slug)
         if existing:
-            return PublishResult(
-                slug=protocol.slug,
-                action="skipped",
-                confidence_level=level,
-                confidence_score=protocol.confidence_score,
-                message=f"Protocol '{protocol.slug}' already exists",
-            )
+            return {
+                "slug": protocol.slug,
+                "action": "skipped",
+                "confidence_level": level,
+                "confidence_score": protocol.confidence_score,
+                "message": f"Protocol '{protocol.slug}' already exists",
+            }
 
         if level == ConfidenceLevel.HIGH:
             # Auto-publish
@@ -65,16 +67,16 @@ async def publish_protocol(
             await create_protocol(session, protocol)
             await session.commit()
 
-            return PublishResult(
-                slug=protocol.slug,
-                action="published",
-                confidence_level=level,
-                confidence_score=protocol.confidence_score,
-                message=(
+            return {
+                "slug": protocol.slug,
+                "action": "published",
+                "confidence_level": level,
+                "confidence_score": protocol.confidence_score,
+                "message": (
                     f"Published '{protocol.slug}' "
                     f"(confidence: {protocol.confidence_score:.2f})"
                 ),
-            )
+            }
         else:
             # Create review request
             protocol.review_status = ReviewStatus.PENDING
@@ -88,18 +90,18 @@ async def publish_protocol(
             await create_review_request(session, review)
             await session.commit()
 
-            return PublishResult(
-                slug=protocol.slug,
-                action="review_requested",
-                confidence_level=level,
-                confidence_score=protocol.confidence_score,
-                review_request_id=str(review.id),
-                message=(
+            return {
+                "slug": protocol.slug,
+                "action": "review_requested",
+                "confidence_level": level,
+                "confidence_score": protocol.confidence_score,
+                "review_request_id": str(review.id),
+                "message": (
                     f"Review requested for '{protocol.slug}' "
                     f"(confidence: {protocol.confidence_score:.2f}, "
                     f"level: {level})"
                 ),
-            )
+            }
 
 
 async def upload_artifact(

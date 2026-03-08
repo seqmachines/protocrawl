@@ -2,18 +2,48 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
+import yaml
 
 from protoclaw.models.protocol import Protocol, ReadSegment
+from protoclaw.models.seqspec import SeqSpec
 
 
-class FormattedOutput(BaseModel):
-    """All formatted outputs for a single protocol."""
+def _coerce_protocol(protocol_input: Protocol | str | dict[str, Any]) -> Protocol:
+    if isinstance(protocol_input, Protocol):
+        return protocol_input
+    if isinstance(protocol_input, str):
+        return Protocol.model_validate_json(protocol_input)
+    return Protocol.model_validate(protocol_input)
 
+
+class FormattedProtocol(BaseModel):
     slug: str
     read_diagram: str
     summary: str
     json_output: str
+
+
+def generate_seqspec_json(seqspec_input: SeqSpec | str | dict[str, Any]) -> str:
+    if isinstance(seqspec_input, SeqSpec):
+        seqspec = seqspec_input
+    elif isinstance(seqspec_input, str):
+        seqspec = SeqSpec.model_validate_json(seqspec_input)
+    else:
+        seqspec = SeqSpec.model_validate(seqspec_input)
+    return seqspec.model_dump_json(indent=2)
+
+
+def generate_seqspec_yaml(seqspec_input: SeqSpec | str | dict[str, Any]) -> str:
+    if isinstance(seqspec_input, SeqSpec):
+        seqspec = seqspec_input
+    elif isinstance(seqspec_input, str):
+        seqspec = SeqSpec.model_validate_json(seqspec_input)
+    else:
+        seqspec = SeqSpec.model_validate(seqspec_input)
+    return yaml.safe_dump(seqspec.model_dump(mode="json"), sort_keys=False)
 
 
 def _segment_label(seg: ReadSegment) -> str:
@@ -73,15 +103,16 @@ _READ_LENGTH_KEYS = {
 }
 
 
-def render_read_diagram(protocol: Protocol) -> str:
+def render_read_diagram(protocol_json: Protocol | str | dict[str, Any]) -> str:
     """Generate an ASCII diagram of the protocol's read structure.
 
     Args:
-        protocol: A normalized Protocol instance.
+        protocol_json: JSON string of a normalized Protocol.
 
     Returns:
         Multi-line string with ASCII read structure diagram.
     """
+    protocol = _coerce_protocol(protocol_json)
     geom = protocol.read_geometry
     lines = [f"Read Structure: {protocol.name}", ""]
 
@@ -114,15 +145,16 @@ def render_read_diagram(protocol: Protocol) -> str:
     return "\n".join(lines).rstrip()
 
 
-def generate_summary(protocol: Protocol) -> str:
+def generate_summary(protocol_json: Protocol | str | dict[str, Any]) -> str:
     """Generate a human-readable summary of the protocol.
 
     Args:
-        protocol: A normalized Protocol instance.
+        protocol_json: JSON string of a normalized Protocol.
 
     Returns:
         Multi-paragraph plain-text summary.
     """
+    protocol = _coerce_protocol(protocol_json)
     paragraphs = []
 
     # Paragraph 1: What it is
@@ -158,30 +190,34 @@ def generate_summary(protocol: Protocol) -> str:
     return "\n\n".join(paragraphs)
 
 
-def generate_json(protocol: Protocol) -> str:
+def generate_json(protocol_json: Protocol | str | dict[str, Any]) -> str:
     """Generate canonical JSON output for the protocol.
 
     Args:
-        protocol: A normalized Protocol instance.
+        protocol_json: JSON string of a normalized Protocol.
 
     Returns:
         Pretty-printed JSON string.
     """
+    protocol = _coerce_protocol(protocol_json)
     return protocol.model_dump_json(indent=2)
 
 
-def format_protocol(protocol: Protocol) -> FormattedOutput:
+def format_protocol(
+    protocol_json: Protocol | str | dict[str, Any],
+) -> FormattedProtocol:
     """Generate all formatted outputs for a protocol.
 
     Args:
-        protocol: A normalized Protocol instance.
+        protocol_json: JSON string of a normalized Protocol.
 
     Returns:
-        FormattedOutput with read_diagram, summary, and json_output.
+        Dict with slug, read_diagram, summary, and json_output.
     """
-    return FormattedOutput(
+    protocol = _coerce_protocol(protocol_json)
+    return FormattedProtocol(
         slug=protocol.slug,
         read_diagram=render_read_diagram(protocol),
         summary=generate_summary(protocol),
-        json_output=generate_json(protocol),
+        json_output=protocol.model_dump_json(indent=2),
     )

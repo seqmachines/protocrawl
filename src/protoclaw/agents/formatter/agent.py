@@ -22,7 +22,7 @@ _INSTRUCTION = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else ""
 
 formatter_agent = LlmAgent(
     name="Formatter",
-    model=f"vertexai/{settings.vertex_model}",
+    model=settings.gemini_model,
     description=(
         "Renders normalized protocol records into ASCII read diagrams, "
         "human-readable summaries, and canonical JSON."

@@ -21,7 +21,7 @@ _INSTRUCTION = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else ""
 
 triage_agent = LlmAgent(
     name="Triage",
-    model=f"vertexai/{settings.vertex_model}",
+    model=settings.gemini_model,
     description=(
         "Evaluates candidate source documents for relevance to "
         "sequencing protocols and assigns assay family categories."

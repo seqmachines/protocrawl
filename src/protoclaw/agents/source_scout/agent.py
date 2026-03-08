@@ -22,7 +22,7 @@ _INSTRUCTION = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else ""
 
 source_scout_agent = LlmAgent(
     name="SourceScout",
-    model=f"vertexai/{settings.vertex_model}",
+    model=settings.gemini_model,
     description=(
         "Monitors and discovers candidate protocol documents from "
         "papers, repos, vendor sites, and curated seed lists."

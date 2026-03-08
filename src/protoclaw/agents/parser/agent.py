@@ -11,6 +11,7 @@ from protoclaw.agents.parser.tools import (
     extract_protocol_details,
     extract_read_structure,
     extract_reagents,
+    extract_seqspec,
 )
 from protoclaw.config import settings
 
@@ -24,7 +25,7 @@ _INSTRUCTION = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else ""
 
 parser_agent = LlmAgent(
     name="Parser",
-    model=f"vertexai/{settings.vertex_model}",
+    model=settings.gemini_model,
     description=(
         "Extracts structured protocol fields (read structure, barcodes, "
         "adapters, reagents, metadata) from source documents."
@@ -37,6 +38,7 @@ parser_agent = LlmAgent(
         extract_adapters,
         extract_reagents,
         extract_protocol_details,
+        extract_seqspec,
     ],
     output_key="parsed_protocols",
 )
